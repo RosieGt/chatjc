@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Mensagens</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+    <!-- Nosso CSS customizado estilo Telegram -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="telegram-theme">
+
+    <!-- Navbar mais suave -->
+    <nav class="navbar navbar-light bg-white shadow-sm border-bottom">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="#">💬 {{ outro_usuario.nome }}</a>
+            <a href="{{ url_for('painel_admin') if session_tipo == 'escola' else url_for('painel_aluno') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Voltar ao Painel</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4" style="max-width: 600px;">
+        <!-- Janela de Conversa Estilo Telegram -->
+        <div id="chat-box" class="chat-container p-4 mb-3 shadow-sm" style="height: 750px; overflow-y: scroll;">
+            {% if mensagens %}
+                {% for msg in mensagens %}
+                    <div class="mb-3 {% if msg.remetente_id == usuario_atual_id %}text-end{% else %}text-start{% endif %}">
+                        
+                        <!-- Caixa da Mensagem com Gradiente ou Translúcida -->
+                        <div class="p-3 d-inline-block text-start {% if msg.remetente_id == usuario_atual_id %}msg-enviada{% else %}msg-recebida{% endif %}" style="max-width: 75%;">
+                            
+                            {% if msg.texto %}
+                                <p class="mb-1" style="word-break: break-word;">{{ msg.texto }}</p>
+                            {% endif %}
+
+                            <!-- Renderização de Arquivo -->
+                            {% if msg.arquivo_url %}
+                                <div class="mt-2">
+                                    {% if msg.arquivo_url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')) %}
+                                        <img src="{{ msg.arquivo_url }}" class="img-fluid rounded mb-2 shadow-sm" style="max-height: 200px; display: block;">
+                                        <a href="{{ msg.arquivo_url }}" download class="btn btn-sm btn-light text-dark border shadow-sm rounded-pill">⬇️ Baixar Imagem</a>
+                                    
+                                    {% elif msg.arquivo_url.lower().endswith(('.mp4', '.mov', '.webm')) %}
+                                        <video controls class="w-100 rounded mb-2 shadow-sm" style="max-height: 200px;">
+                                            <source src="{{ msg.arquivo_url }}">
+                                            Seu navegador não suporta vídeos.
+                                        </video>
+                                        <br>
+                                        <a href="{{ msg.arquivo_url }}" download class="btn btn-sm btn-light text-dark border shadow-sm rounded-pill">⬇️ Baixar Vídeo</a>
+                                    
+                                    {% else %}
+                                        <a href="{{ msg.arquivo_url }}" target="_blank" class="btn btn-sm btn-light text-dark border shadow-sm rounded-pill">📁 Baixar Documento</a>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            <small class="d-block mt-1 text-end opacity-75" style="font-size: 0.70rem;">{{ msg.data_envio.strftime('%H:%M') }}</small>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center text-muted mt-5">
+                    <p>Nenhuma mensagem por aqui ainda. Envie a primeira mensagem abaixo! 👇</p>
+                </div>
+            {% endif %}
+        </div>
+        <!-- Área de Pré-visualização do Arquivo (Fica oculta até você selecionar um arquivo) -->
+        <!-- Área de Pré-visualização Ampliada -->
+        <div id="file-preview-container" class="d-none p-3 mb-2 bg-white rounded shadow border position-relative" style="max-width: 320px;">
+            <button type="button" id="cancel-file" class="position-absolute top-0 end-0 translate-middle btn btn-sm btn-danger rounded-circle p-0 lh-1 d-flex align-items-center justify-content-center shadow-sm" style="width: 26px; height: 26px;" title="Cancelar arquivo">
+                &times;
+            </button>
+            
+            <div class="d-flex align-items-center">
+                <!-- Miniatura da Imagem ou Ícone -->
+                <div id="preview-thumb-container" class="me-3 bg-light rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; overflow: hidden; flex-shrink: 0;">
+                    <img id="preview-img" src="" class="w-100 h-100 object-fit-cover d-none" alt="Preview">
+                    <span id="preview-icon" class="fs-2">📎</span>
+                </div>
+                
+                <div class="overflow-hidden">
+                    <h6 class="mb-1 text-dark text-truncate small fw-bold" id="preview-name">Nome do arquivo</h6>
+                    <span class="text-muted" style="font-size: 0.75rem;" id="preview-size">Pronto para envio</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário de Envio Suave -->
+        <form action="/enviar-mensagem" method="POST" enctype="multipart/form-data" class="bg-white p-3 rounded-pill shadow-sm border d-flex align-items-center">
+            <input type="hidden" name="destinatario_id" value="{{ outro_usuario.id }}">
+            
+            <input type="text" class="form-control border-0 shadow-none bg-transparent" name="texto" placeholder="Escreva sua mensagem...">
+            
+            <!-- Botão de arquivo discreto -->
+            <label for="file-upload" class="btn btn-light rounded-circle mx-4 text-secondary mb-1" style="cursor: pointer;" title="Anexar arquivo"><i class="fas fa-paperclip"></i>
+            </label>
+            <input id="file-upload" type="file" name="arquivo" class="d-none" accept="image/*,video/*,.pdf,.doc,.docx,.txt">
+
+            <button class="btn btn-primary rounded-pill px-4" type="submit">Enviar</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Rola o chat para o final assim que a página carrega
+        window.onload = function() {
+            var chatBox = document.getElementById("chat-box");
+            if (chatBox) {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        };
+
+        // Atualiza a página a cada 4 segundos (apenas se o usuário não estiver digitando)
+        
+    </script>
+    <script>
+        const fileInput = document.getElementById("file-upload"); // (Ou admin-file-upload no painel admin)
+        const previewContainer = document.getElementById("file-preview-container");
+        const previewName = document.getElementById("preview-name");
+        const previewIcon = document.getElementById("preview-icon");
+        const cancelBtn = document.getElementById("cancel-file");
+
+        if (fileInput) {
+            fileInput.addEventListener("change", function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    previewName.textContent = file.name;
+                    
+                    // Altera o ícone dependendo do tipo de arquivo
+                    if (file.type.startsWith("image/")) {
+                        previewIcon.textContent = "🖼️";
+                    } else if (file.type.startsWith("video/")) {
+                        previewIcon.textContent = "🎬";
+                    } else {
+                        previewIcon.textContent = "📄";
+                    }
+
+                    // Mostra a caixinha de preview
+                    previewContainer.classList.remove("d-none");
+                    previewContainer.classList.add("d-flex");
+                }
+            });
+        }
+
+        // Botão para cancelar e remover o arquivo selecionado
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", function() {
+                fileInput.value = ""; // Limpa o input file
+                previewContainer.classList.remove("d-flex");
+                previewContainer.classList.add("d-none");
+            });
+        }
+        if (fileInput && previewContainer) {
+            fileInput.addEventListener("change", function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    previewName.textContent = file.name;
+                    previewSize.textContent = (file.size / 1024).toFixed(1) + " KB";
+                    
+                    const imgTag = document.getElementById("preview-img");
+                    const iconTag = document.getElementById("preview-icon");
+
+                    if (file.type.startsWith("image/")) {
+                        // Se for imagem, cria um link temporário para mostrar a miniatura real
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            imgTag.src = e.target.result;
+                            imgTag.classList.remove("d-none");
+                            iconTag.classList.add("d-none");
+                        }
+                        reader.readAsDataURL(file);
+                    } else {
+                        imgTag.classList.add("d-none");
+                        iconTag.classList.remove("d-none");
+                        iconTag.textContent = file.type.startsWith("video/") ? "🎬" : "📄";
+                    }
+
+                    previewContainer.classList.remove("d-none");
+                }
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", function() {
+                fileInput.value = "";
+                previewContainer.classList.add("d-none");
+            });
+        }
+    </script>
+
+</body>
+</html>

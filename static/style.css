@@ -1,0 +1,36 @@
+/* Fundo geral suave inspirado no Telegram */
+body.telegram-theme {
+    background-color: #f0f4f8; /* Tom azul/cinza pastel bem suave */
+    /* Se preferir verde suave: background-color: #f0f7f4; */
+    /* Se preferir rosa suave: background-color: #f8f0f4; */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Container do chat com fundo delicado */
+.chat-container {
+    background-color: #e6ebee; /* Cor de fundo base */
+    background-image: url('/static/img/fundo_chat.jpg');
+    background-repeat: repeat;
+    background-size: 300px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+}
+
+/* Balões de mensagem translúcidos com gradiente suave */
+.msg-enviada {
+    /* Azul vibrante do Telegram com 70% de opacidade (30% transparente) */
+    background: linear-gradient(180deg, rgba(64, 167, 227, 0.7) 0%, rgba(42, 133, 214, 0.7) 50%, rgba(86, 97, 224, 0.7) 100%);
+    background-attachment: fixed; /* Faz o gradiente acompanhar a tela ao rolar */
+    color: white;
+    border-radius: 16px 16px 4px 16px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.msg-recebida {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.918), rgba(232, 244, 255, 0.918));
+    color: #333;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 16px 16px 16px 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}    
