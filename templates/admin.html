@@ -47,6 +47,7 @@
                     <th>ID</th>
                     <th>Nome</th>
                     <th>E-mail</th>
+                    <th>Telefone</th>
                     <th>Status</th>
                     <th>Ações</th>
                 </tr>
@@ -57,6 +58,7 @@
                     <td>{{ aluno.id }}</td>
                     <td>{{ aluno.nome }}</td>
                     <td>{{ aluno.email }}</td>
+                    <td>{{ aluno.telefone }}</td>
                     <td>
                         {% if aluno.banido %}
                             <span class="badge bg-danger">Banido</span>
@@ -65,17 +67,20 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if aluno.banido %}
-                            <a href="/admin/alternar-ban/{{ aluno.id }}" class="btn btn-sm btn-outline-success">Desbloquear</a>
-                        {% else %}
-                            <a href="/admin/alternar-ban/{{ aluno.id }}" class="btn btn-sm btn-outline-danger">Banir</a>
-                        {% endif %}
-                        
-                        <form action="{{ url_for('excluir_aluno', usuario_id=aluno.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir permanentemente o aluno {{ aluno.nome }}?');">
-                            <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
-                        </form>
-                                            <!-- Botão para abrir conversa individual -->
-                        <a href="/admin/chat/{{ aluno.id }}" class="btn btn-sm btn-primary">Conversar</a>
+                        <!-- Container para alinhar os botões bonitinhos lado a lado -->
+                        <div class="d-inline-flex gap-1 align-items-center">
+                            {% if aluno.banido %}
+                                <a href="/admin/alternar-ban/{{ aluno.id }}" class="btn btn-sm btn-outline-success">Desbloquear</a>
+                            {% else %}
+                                <a href="/admin/alternar-ban/{{ aluno.id }}" class="btn btn-sm btn-outline-danger">Banir</a>
+                            {% endif %}
+                            
+                            <form action="{{ url_for('excluir_aluno', usuario_id=aluno.id) }}" method="POST" class="mb-0" onsubmit="return confirm('Tem certeza que deseja excluir permanentemente o aluno {{ aluno.nome }}?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                            </form>
+
+                            <a href="/admin/chat/{{ aluno.id }}" class="btn btn-sm btn-primary">Conversar</a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
