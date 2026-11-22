@@ -71,7 +71,10 @@
                             <a href="/admin/alternar-ban/{{ aluno.id }}" class="btn btn-sm btn-outline-danger">Banir</a>
                         {% endif %}
                         
-                        <!-- Botão para abrir conversa individual -->
+                        <form action="{{ url_for('excluir_aluno', usuario_id=aluno.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir permanentemente o aluno {{ aluno.nome }}?');">
+                            <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                        </form>
+                                            <!-- Botão para abrir conversa individual -->
                         <a href="/admin/chat/{{ aluno.id }}" class="btn btn-sm btn-primary">Conversar</a>
                     </td>
                 </tr>

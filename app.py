@@ -374,6 +374,24 @@ def editar_grupo(grupo_id):
                 
         db.session.commit()
     return redirect(url_for("admin_painel", grupo_id=grupo_id))
+@app.route("/admin/excluir-aluno/<int:usuario_id>", methods=["POST"])
+def excluir_aluno(usuario_id):
+    if session.get("tipo") != "escola":
+        return redirect(url_for('home'))
+        
+    aluno = Usuario.query.get_or_404(usuario_id)
+    
+    # Remove as mensagens enviadas ou recebidas pelo aluno para evitar erros de chave estrangeira
+    Mensagem.query.filter(
+        (Mensagem.remetente_id == aluno.id) | (Mensagem.destinatario_id == aluno.id)
+    ).delete()
+    
+    # Remove o aluno do banco de dados
+    db.session.delete(aluno)
+    db.session.commit()
+    
+    flash(f"Aluno {aluno.nome} excluído com sucesso!", "success")
+    return redirect(url_for('painel_admin'))
 
 # --- PAINEL DO ALUNO ---
 
