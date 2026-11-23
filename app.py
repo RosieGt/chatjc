@@ -2,6 +2,7 @@
 
 import os
 import random
+import threading
 from datetime import datetime
 from flask import Flask, flash, render_template, request, redirect, url_for, session
 from werkzeug.utils import secure_filename
@@ -12,7 +13,8 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-def enviar_email_verificacao(destinatario, codigo):
+def enviar_email_async(destinatario, codigo):
+    # Função interna que faz o envio real via SMTP
     remetente = "jc.almeidagestaomonitoria@gmail.com"
     senha_app = "fbxiwikguycfatid"
     
@@ -25,34 +27,19 @@ def enviar_email_verificacao(destinatario, codigo):
     msg.attach(MIMEText(corpo, 'plain'))
     
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5) # Timeout curto para não travar
         server.starttls()
         server.login(remetente, senha_app)
         server.sendmail(remetente, destinatario, msg.as_string())
         server.quit()
-        return True
     except Exception as e:
-        print("Erro ao enviar e-mail:", e)
-        return False
+        print("Erro ao enviar e-mail em background:", e)
 
-load_dotenv()
-
-app = Flask(__name__)
-app.secret_key = "chave_secreta_super_segura"
-
-database_url = os.getenv("DATABASE_URL")
-if not database_url:
-    raise RuntimeError("A variável DATABASE_URL não foi encontrada no arquivo .env!")
-
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    "pool_pre_ping": True,
-    "pool_recycle": 300,
-}
-
-db.init_app(app)
-
+def enviar_email_verificacao(destinatario, codigo):
+    # Dispara a thread para enviar o e-mail sem bloquear a resposta do site
+    t = threading.Thread(target=enviar_email_async, args=(destinatario, codigo))
+    t.start()
+    return True
 # --- ROTAS PÚBLICAS E AUTENTICAÇÃO ---
 
 @app.route("/")
