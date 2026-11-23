@@ -40,6 +40,25 @@ def enviar_email_verificacao(destinatario, codigo):
     t = threading.Thread(target=enviar_email_async, args=(destinatario, codigo))
     t.start()
     return True
+
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = "chave_secreta_super_segura"
+
+database_url = os.getenv("DATABASE_URL")
+if not database_url:
+    raise RuntimeError("A variável DATABASE_URL não foi encontrada no arquivo .env!")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
+
+db.init_app(app)
+
 # --- ROTAS PÚBLICAS E AUTENTICAÇÃO ---
 
 @app.route("/")
