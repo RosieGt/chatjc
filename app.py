@@ -1,6 +1,6 @@
 import os
 import random
-import threading
+import resend
 from datetime import datetime
 from flask import Flask, flash, render_template, request, redirect, url_for, session
 from werkzeug.utils import secure_filename
@@ -33,32 +33,23 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 
 db.init_app(app)
 
-def enviar_email_async(destinatario, codigo):
-    remetente = "jc.almeidagestaomonitoria@gmail.com"
-    senha_app = "fbxiwikguycfatid"
-    
-    msg = MIMEMultipart()
-    msg['From'] = remetente
-    msg['To'] = destinatario
-    msg['Subject'] = "Código de Verificação - Chat"
-    
-    corpo = f"Olá! Seu código de verificação para concluir o cadastro é: {codigo}"
-    msg.attach(MIMEText(corpo, 'plain'))
-    
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
-        server.starttls()
-        server.login(remetente, senha_app)
-        server.sendmail(remetente, destinatario, msg.as_string())
-        server.quit()
-    except Exception as e:
-        print("Erro ao enviar e-mail em background:", e)
-
 def enviar_email_verificacao(destinatario, codigo):
-    t = threading.Thread(target=enviar_email_async, args=(destinatario, codigo))
-    t.start()
-    return True
-
+    try:
+        params = {
+            # O Resend exige um domínio verificado, mas para testes iniciais 
+            # você pode usar "onboarding@resend.dev" como remetente
+            "from": "Acme <onboarding@resend.dev>",
+            "to": [destinatario],
+            "subject": "Código de Verificação - Chat",
+            "html": f"<p>Olá! Seu código de verificação para concluir o cadastro é: <strong>{codigo}</strong></p>"
+        }
+        
+        email = resend.Emails.send(params)
+        print("E-mail enviado com sucesso via Resend:", email)
+        return True
+    except Exception as e:
+        print("Erro ao enviar e-mail com Resend:", e)
+        return False
 # --- ROTAS PÚBLICAS E AUTENTICAÇÃO ---
 
 @app.route("/")
