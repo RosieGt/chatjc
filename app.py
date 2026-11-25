@@ -1,5 +1,3 @@
-# --- CÓDIGO CORRIGIDO DO APP.PY ---
-
 import os
 import random
 import threading
@@ -13,8 +11,29 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = "chave_secreta_super_segura"
+
+# Configuração da URL do Banco de Dados (PostgreSQL / Supabase / Render)
+database_url = os.getenv("DATABASE_URL")
+if not database_url:
+    raise RuntimeError("A variável DATABASE_URL não foi encontrada!")
+
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
+
+db.init_app(app)
+
 def enviar_email_async(destinatario, codigo):
-    # Função interna que faz o envio real via SMTP
     remetente = "jc.almeidagestaomonitoria@gmail.com"
     senha_app = "fbxiwikguycfatid"
     
@@ -27,7 +46,7 @@ def enviar_email_async(destinatario, codigo):
     msg.attach(MIMEText(corpo, 'plain'))
     
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=5) # Timeout curto para não travar
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
         server.starttls()
         server.login(remetente, senha_app)
         server.sendmail(remetente, destinatario, msg.as_string())
@@ -35,7 +54,10 @@ def enviar_email_async(destinatario, codigo):
     except Exception as e:
         print("Erro ao enviar e-mail em background:", e)
 
-
+def enviar_email_verificacao(destinatario, codigo):
+    t = threading.Thread(target=enviar_email_async, args=(destinatario, codigo))
+    t.start()
+    return True
 
 # --- ROTAS PÚBLICAS E AUTENTICAÇÃO ---
 
@@ -86,7 +108,7 @@ def registro():
                     nome=dados['nome'],
                     email=dados['email'],
                     senha=dados['senha'],
-                    telefone=dados['telefone'], # Corrigido aqui
+                    telefone=dados['telefone'],
                     tipo='aluno'
                 )
                 db.session.add(novo_aluno)
@@ -358,6 +380,7 @@ def editar_grupo(grupo_id):
                 
         db.session.commit()
     return redirect(url_for("admin_painel", grupo_id=grupo_id))
+
 @app.route("/admin/excluir-aluno/<int:usuario_id>", methods=["POST"])
 def excluir_aluno(usuario_id):
     if session.get("tipo") != "escola":
@@ -365,12 +388,10 @@ def excluir_aluno(usuario_id):
         
     aluno = Usuario.query.get_or_404(usuario_id)
     
-    # Remove as mensagens enviadas ou recebidas pelo aluno para evitar erros de chave estrangeira
     Mensagem.query.filter(
         (Mensagem.remetente_id == aluno.id) | (Mensagem.destinatario_id == aluno.id)
     ).delete()
     
-    # Remove o aluno do banco de dados
     db.session.delete(aluno)
     db.session.commit()
     
